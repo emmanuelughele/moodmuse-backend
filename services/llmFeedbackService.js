@@ -1,11 +1,15 @@
-const axios = require('axios');
+import axios from 'axios';
 
-async function getLLMFeedbackStream(entry, onChunk) {
+/**
+ * Streams LLM feedback from OpenRouter
+ * @param {string} entry - User's journal entry
+ * @param {function} onChunk - Callback for handling streamed chunks
+ */
+export async function getLLMFeedbackStream(entry, onChunk) {
   if (!entry || entry.trim() === '') {
     throw new Error('Invalid journal entry');
   }
 
-  // Prompt construction
   const prompt = `
 You are an empathetic mental health assistant. A user just wrote this journal entry:
 
@@ -24,12 +28,12 @@ Follow-up Question: <a thoughtful question>
   try {
     const response = await axios({
       method: 'post',
-      url: process.env.LLM_API_URL || 'https://openrouter.ai/api/v1/chat/completions', // ✅ FIXED URL
+      url: process.env.LLM_API_URL || 'https://openrouter.ai/api/v1/chat/completions',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // ✅ Good for OpenRouter tracking
-        'X-Title': 'MoodMuse-AI', // ✅ Optional but recommended
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app',
+        'X-Title': 'MoodMuse-AI',
       },
       data: {
         model: 'mistral/mistral-7b-instruct',
@@ -37,7 +41,7 @@ Follow-up Question: <a thoughtful question>
           { role: 'system', content: 'You are an empathetic mental health assistant.' },
           { role: 'user', content: prompt }
         ],
-        stream: true
+        stream: true,
       },
       responseType: 'stream',
       timeout: 20000,
@@ -62,7 +66,6 @@ Follow-up Question: <a thoughtful question>
               }
             } catch (err) {
               console.error('⚠️ Stream JSON parse error:', err.message);
-              // You can optionally skip malformed chunks instead of failing
             }
           }
         }
@@ -83,5 +86,3 @@ Follow-up Question: <a thoughtful question>
     throw new Error('Failed to connect to OpenRouter.');
   }
 }
-
-module.exports = { getLLMFeedbackStream };

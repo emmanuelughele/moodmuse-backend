@@ -1,6 +1,5 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const fetch = require('node-fetch');
 
 router.post('/analyze', async (req, res) => {
   try {
@@ -17,6 +16,8 @@ router.post('/analyze', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app',
+        'X-Title': 'MoodMuse-AI',
       },
       body: JSON.stringify({
         model: 'mistral-7b-instruct',
@@ -46,4 +47,4 @@ router.post('/analyze', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

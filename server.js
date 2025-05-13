@@ -1,11 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const journalRoutes = require('./routes/journal');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import journalRoutes from './routes/journal.js'; // Make sure the filename matches
 
 dotenv.config();
 
 const app = express();
+
 app.use(cors({ origin: 'https://mymoodmuse.netlify.app' }));
 app.use(express.json());
 
