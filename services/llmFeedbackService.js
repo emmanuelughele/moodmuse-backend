@@ -5,7 +5,7 @@ async function getLLMFeedbackStream(entry, onChunk) {
     throw new Error('Invalid journal entry');
   }
 
-  // Construct the prompt
+  // Prompt construction
   const prompt = `
 You are an empathetic mental health assistant. A user just wrote this journal entry:
 
@@ -24,11 +24,12 @@ Follow-up Question: <a thoughtful question>
   try {
     const response = await axios({
       method: 'post',
-      url: process.env.LLM_API_URL || 'https://openrouter.ai/api/v1/chat',
+      url: process.env.LLM_API_URL || 'https://openrouter.ai/api/v1/chat/completions', // ✅ FIXED URL
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // Optional but helpful for OpenRouter tracking
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // ✅ Good for OpenRouter tracking
+        'X-Title': 'MoodMuse-AI', // ✅ Optional but recommended
       },
       data: {
         model: 'mistral/mistral-7b-instruct',
@@ -39,7 +40,7 @@ Follow-up Question: <a thoughtful question>
         stream: true
       },
       responseType: 'stream',
-      timeout: 20000
+      timeout: 20000,
     });
 
     return new Promise((resolve, reject) => {
@@ -57,16 +58,20 @@ Follow-up Question: <a thoughtful question>
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 fullText += content;
-                onChunk(content); // Stream to frontend
+                onChunk(content);
               }
             } catch (err) {
               console.error('⚠️ Stream JSON parse error:', err.message);
+              // You can optionally skip malformed chunks instead of failing
             }
           }
         }
       });
 
-      response.data.on('end', () => resolve(fullText));
+      response.data.on('end', () => {
+        resolve(fullText);
+      });
+
       response.data.on('error', (err) => {
         console.error('❌ Stream error:', err.message);
         reject(new Error('Streaming failed from OpenRouter'));
