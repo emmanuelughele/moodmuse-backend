@@ -1,9 +1,10 @@
 const express = require('express');
+const fetch = require('node-fetch'); // Assuming you're using node-fetch for API requests
 const cors = require('cors');
 const dotenv = require('dotenv');
-const fetch = require('node-fetch'); // Import fetch to make API requests
+const journalRoutes = require('./routes/journal');
 
-dotenv.config();
+dotenv.config(); // This will load environment variables from .env file if needed
 
 const app = express();
 app.use(cors({ origin: 'https://mymoodmuse.netlify.app' }));
@@ -15,55 +16,39 @@ app.get('/', (req, res) => {
 });
 
 // Your route for journal-related actions
-app.post('/api/journal/analyze', async (req, res) => {
-  try {
-    const entry = req.body.entry; // The journal entry sent by the frontend
+app.use('/api/journal', journalRoutes);
 
-    // Send the journal entry to OpenRouter's Mistral 7B model
-    const response = await fetch('https://api.openrouter.ai/v1/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, // Use your OpenRouter API Key
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'mistral-7b-instruct', // Specify the Mistral 7B model
-        prompt: entry, // Send the journal entry to the model
-        max_tokens: 150, // You can adjust the number of tokens based on your needs
-        temperature: 0.7, // Control the randomness of the response
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // Return the feedback from the model
-      res.json({
-        feedback: data.choices[0].text || 'Empathetic feedback from Mistral 7B model',
-      });
-    } else {
-      res.status(500).json({ error: 'Failed to generate feedback from the model.' });
-    }
-  } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({ error: 'Failed to generate feedback from the model.' });
-  }
-});
-
-// Your API endpoint for generating feedback (Optional)
+// API endpoint for generating LLaMA model responses
 app.post('/api/generate', async (req, res) => {
-  try {
-    const entry = req.body.entry;
-    res.json({
-      feedback: 'Empathetic feedback from LLaMA model',
-      followUpQuestion: 'What made you feel this way?',
-    });
-  } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({ error: 'Failed to generate feedback from the model.' });
-  }
+    try {
+        const entry = req.body.entry; // Assuming the body has a journal entry
+
+        // Use the OPENROUTER_API_KEY environment variable
+        const apiKey = process.env.OPENROUTER_API_KEY; // Access the API key securely
+        if (!apiKey) {
+            return res.status(500).json({ error: 'API key is missing.' });
+        }
+
+        // Example API call to OpenRouter (replace with the correct endpoint and method)
+        const response = await fetch('https://api.openrouter.com/endpoint', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`, // Use the API key for authentication
+            },
+            body: JSON.stringify({ entry }),
+        });
+
+        const data = await response.json();
+        res.json(data); // Return the response from the API
+
+    } catch (error) {
+        console.error('❌ Error:', error);
+        res.status(500).json({ error: 'Failed to generate feedback from the model.' });
+    }
 });
 
+// Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
