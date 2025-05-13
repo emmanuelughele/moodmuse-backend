@@ -20,18 +20,19 @@ router.post('/analyze', async (req, res) => {
         'X-Title': 'MoodMuse-AI',
       },
       body: JSON.stringify({
-        model: 'mistral-7b-instruct',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful therapist assistant analyzing a user\'s journal entry and giving kind, thoughtful emotional feedback.',
-          },
-          {
-            role: 'user',
-            content: entry,
-          }
-        ],
-      }),
+  model: 'mistralai/mistral-7b-instruct', // ✅ corrected model ID
+  messages: [
+    {
+      role: 'system',
+      content: 'You are a helpful therapist assistant analyzing a user\'s journal entry and giving kind, thoughtful emotional feedback.',
+    },
+    {
+      role: 'user',
+      content: entry,
+    }
+  ],
+}),
+
     });
 
     if (!response.ok) {
