@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const fetch = require('node-fetch'); // Assuming you're using node-fetch for API requests
 const cors = require('cors');
@@ -20,32 +21,37 @@ app.use('/api/journal', journalRoutes);
 
 // API endpoint for generating LLaMA model responses
 app.post('/api/generate', async (req, res) => {
-    try {
-        const entry = req.body.entry; // Assuming the body has a journal entry
+  try {
+    const entry = req.body.entry; // Assuming the body has a journal entry
 
-        // Use the OPENROUTER_API_KEY environment variable
-        const apiKey = process.env.OPENROUTER_API_KEY; // Access the API key securely
-        if (!apiKey) {
-            return res.status(500).json({ error: 'API key is missing.' });
-        }
-
-        // Example API call to OpenRouter (replace with the correct endpoint and method)
-        const response = await fetch('https://api.openrouter.com/endpoint', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`, // Use the API key for authentication
-            },
-            body: JSON.stringify({ entry }),
-        });
-
-        const data = await response.json();
-        res.json(data); // Return the response from the API
-
-    } catch (error) {
-        console.error('❌ Error:', error);
-        res.status(500).json({ error: 'Failed to generate feedback from the model.' });
+    // Use the OPENROUTER_API_KEY environment variable
+    const apiKey = process.env.OPENROUTER_API_KEY; // Access the API key securely
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key is missing.' });
     }
+
+    // Example API call to OpenRouter (replace with the correct endpoint and method)
+    const response = await fetch('https://api.openrouter.com/endpoint', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`, // Use the API key for authentication
+      },
+      body: JSON.stringify({ entry }),
+    });
+
+    // Check if the response was successful
+    if (!response.ok) {
+      throw new Error(`API call failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data); // Return the response from the API
+
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ error: 'Failed to generate feedback from the model.' });
+  }
 });
 
 // Start the server
