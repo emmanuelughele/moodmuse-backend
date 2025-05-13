@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -7,8 +6,13 @@ const journalRoutes = require('./routes/journal');
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: 'https://mymoodmuse.netlify.app' }));
 app.use(express.json());
+
+// Define your base route BEFORE listen
+app.get('/', (req, res) => {
+  res.send('MoodMuse API is running.');
+});
 
 app.use('/api/journal', journalRoutes);
 
