@@ -6,16 +6,20 @@ async function getLLMFeedbackStream(entry, onChunk) {
     throw new Error('Invalid journal entry');
   }
 
-  const messages = [
-    {
-      role: 'system',
-      content: `You are an empathetic mental health assistant. Reflect on the user's journal entry in a supportive tone. Provide feedback and 1 follow-up question.`,
-    },
-    {
-      role: 'user',
-      content: entry,
-    },
-  ];
+  const prompt = `
+You are an empathetic mental health assistant. A user just wrote this journal entry:
+
+"${entry}"
+
+1. Gently reflect on their emotional state and offer thoughtful, human-like feedback.
+2. Suggest 1 follow-up question they can reflect on.
+3. Keep the tone warm and supportive.
+4. Format your reply like:
+
+Feedback: <your feedback>
+
+Follow-up Question: <a thoughtful question>
+`;
 
   try {
     const response = await axios({
@@ -24,20 +28,50 @@ async function getLLMFeedbackStream(entry, onChunk) {
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://mymoodmuse.netlify.app',
-        'X-Title': 'MoodMuse',
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // optional but recommended
       },
       data: {
-        model: 'openchat/openchat-7b:free', // or try another free model
-        messages: messages,
-        stream: false, // You can use true and parse stream later
+        model: 'mistral/mistral-7b-instruct',
+        messages: [
+          { role: 'system', content: 'You are an empathetic mental health assistant.' },
+          { role: 'user', content: prompt }
+        ],
+        stream: true
       },
-      timeout: 20000,
+      responseType: 'stream',
+      timeout: 20000
     });
 
-    const reply = response.data.choices[0].message.content;
-    if (onChunk) onChunk(reply); // send all at once
-    return reply;
+    return new Promise((resolve, reject) => {
+      let fullText = '';
+
+      response.data.on('data', (chunk) => {
+        const lines = chunk.toString().split('\n').filter(line => line.trim() !== '');
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const jsonStr = line.replace(/^data:\s*/, '');
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                fullText += content;
+                onChunk(content);
+              }
+            } catch (err) {
+              console.error('⚠️ Stream JSON parse error:', err.message);
+            }
+          }
+        }
+      });
+
+      response.data.on('end', () => resolve(fullText));
+      response.data.on('error', (err) => {
+        console.error('❌ Stream error:', err.message);
+        reject(new Error('Streaming failed from OpenRouter'));
+      });
+    });
 
   } catch (error) {
     console.error('❌ LLM Feedback Error:', error.message);
