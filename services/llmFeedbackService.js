@@ -6,62 +6,42 @@ async function getLLMFeedbackStream(entry, onChunk) {
     throw new Error('Invalid journal entry');
   }
 
-  const prompt = `
-You are an empathetic mental health assistant. A user just wrote this journal entry:
-
-"${entry}"
-
-1. Gently reflect on their emotional state and offer thoughtful, human-like feedback.
-2. Suggest 1 follow-up question they can reflect on.
-3. Keep the tone warm and supportive.
-4. Format your reply like:
-
-Feedback: <your feedback>
-
-Follow-up Question: <a thoughtful question>
-`;
+  const messages = [
+    {
+      role: 'system',
+      content: `You are an empathetic mental health assistant. Reflect on the user's journal entry in a supportive tone. Provide feedback and 1 follow-up question.`,
+    },
+    {
+      role: 'user',
+      content: entry,
+    },
+  ];
 
   try {
     const response = await axios({
       method: 'post',
-      url: process.env.LLM_API_URL || 'http://localhost:11434/api/generate',
-      data: {
-        model: 'llama3',
-        prompt,
-        stream: true
+      url: process.env.LLM_API_URL || 'https://openrouter.ai/api/v1/chat',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app',
+        'X-Title': 'MoodMuse',
       },
-      responseType: 'stream',
-      timeout: 20000 // 20 seconds timeout to prevent hanging
+      data: {
+        model: 'openchat/openchat-7b:free', // or try another free model
+        messages: messages,
+        stream: false, // You can use true and parse stream later
+      },
+      timeout: 20000,
     });
 
-    return new Promise((resolve, reject) => {
-      let fullText = '';
-
-      response.data.on('data', (chunk) => {
-        try {
-          const lines = chunk.toString().split('\n').filter(Boolean);
-          for (const line of lines) {
-            const parsed = JSON.parse(line);
-            if (parsed.response) {
-              fullText += parsed.response;
-              onChunk(parsed.response);
-            }
-          }
-        } catch (err) {
-          console.error('⚠️ Stream parsing error:', err.message);
-        }
-      });
-
-      response.data.on('end', () => resolve(fullText));
-      response.data.on('error', (err) => {
-        console.error('❌ Stream error:', err.message);
-        reject(new Error('Streaming failed from LLM'));
-      });
-    });
+    const reply = response.data.choices[0].message.content;
+    if (onChunk) onChunk(reply); // send all at once
+    return reply;
 
   } catch (error) {
     console.error('❌ LLM Feedback Error:', error.message);
-    throw new Error('Failed to connect to the language model service.');
+    throw new Error('Failed to connect to OpenRouter.');
   }
 }
 
