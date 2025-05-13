@@ -1,4 +1,3 @@
-// services/llmFeedbackService.js
 const axios = require('axios');
 
 async function getLLMFeedbackStream(entry, onChunk) {
@@ -6,6 +5,7 @@ async function getLLMFeedbackStream(entry, onChunk) {
     throw new Error('Invalid journal entry');
   }
 
+  // Construct the prompt
   const prompt = `
 You are an empathetic mental health assistant. A user just wrote this journal entry:
 
@@ -28,7 +28,7 @@ Follow-up Question: <a thoughtful question>
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // optional but recommended
+        'HTTP-Referer': 'https://mymoodmuse.netlify.app', // Optional but helpful for OpenRouter tracking
       },
       data: {
         model: 'mistral/mistral-7b-instruct',
@@ -57,7 +57,7 @@ Follow-up Question: <a thoughtful question>
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 fullText += content;
-                onChunk(content);
+                onChunk(content); // Stream to frontend
               }
             } catch (err) {
               console.error('⚠️ Stream JSON parse error:', err.message);
