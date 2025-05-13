@@ -14,9 +14,26 @@ app.get('/', (req, res) => {
   res.send('MoodMuse API is running.');
 });
 
+// Your route for journal-related actions
 app.use('/api/journal', journalRoutes);
+
+// Your API endpoint for generating LLaMA model responses
+app.post('/api/generate', async (req, res) => {
+    try {
+        // Implement the logic to generate feedback from the LLaMA model
+        const entry = req.body.entry; // Assuming the body has a journal entry
+        // Call the LLaMA model here and return a response
+        res.json({
+            feedback: 'Empathetic feedback from LLaMA model',
+            followUpQuestion: 'What made you feel this way?'
+        });
+    } catch (error) {
+        console.error('❌ Error:', error);
+        res.status(500).json({ error: 'Failed to generate feedback from the model.' });
+    }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
