@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /**
- * Streams LLM feedback from OpenRouter
+ * Streams LLM feedback from OpenRouter in Therapy Mode
  * @param {string} entry - User's journal entry
  * @param {function} onChunk - Callback for handling streamed chunks
  */
@@ -11,18 +11,23 @@ export async function getLLMFeedbackStream(entry, onChunk) {
   }
 
   const prompt = `
-You are an empathetic mental health assistant. A user just wrote this journal entry:
+You are a licensed therapist in a secure and private therapeutic setting. 
+A client has just shared the following journal entry:
 
 "${entry}"
 
-1. Gently reflect on their emotional state and offer thoughtful, human-like feedback.
-2. Suggest 1 follow-up question they can reflect on.
-3. Keep the tone warm and supportive.
-4. Format your reply like:
+Please do the following:
+1. Use reflective listening to validate their emotional experience.
+2. Provide a brief therapeutic insight using principles from CBT, ACT, or person-centered therapy.
+3. Ask one gentle, introspective question to guide their self-awareness or emotional growth.
+4. Use warm, compassionate, professional language — not overly casual or robotic.
+5. Keep your tone calm, reassuring, and grounded.
+
+Format your response like this:
 
 Feedback: <your feedback>
 
-Follow-up Question: <a thoughtful question>
+Therapist's Question: <your question>
 `;
 
   try {
@@ -38,8 +43,14 @@ Follow-up Question: <a thoughtful question>
       data: {
         model: 'mistral/mistral-7b-instruct',
         messages: [
-          { role: 'system', content: 'You are an empathetic mental health assistant.' },
-          { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content: `You are a compassionate, professional therapist. Keep responses warm, insightful, and trauma-informed.`,
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
         ],
         stream: true,
       },
